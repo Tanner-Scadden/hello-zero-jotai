@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev:ui": "vite",
-    "dev:zero-cache": "zero-cache-dev -p src/schema.ts",
+    "dev:zero-cache": "zero-cache-dev -p src/schema.ts --force",
     "dev:db-up": "docker compose --env-file .env -f ./docker/docker-compose.yml up",
     "dev:db-down": "docker compose --env-file .env -f ./docker/docker-compose.yml down",
     "dev:clean": "source .env && docker volume rm -f docker_zstart_pgdata && rm -rf \"${ZERO_REPLICA_FILE}\"*",
@@ -14,8 +14,11 @@
   },
   "dependencies": {
     "@rocicorp/zero": "0.17.2025031400",
+    "@types/lodash": "^4.17.16",
     "jose": "^5.9.6",
+    "jotai": "^2.12.2",
     "js-cookie": "^3.0.5",
+    "lodash": "^4.17.21",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "sst": "3.9.33"

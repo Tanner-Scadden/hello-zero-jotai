@@ -1,29 +1,30 @@
 import { useState, MouseEvent, useRef } from "react";
 import Cookies from "js-cookie";
-import { useQuery, useZero } from "@rocicorp/zero/react";
+import { useZero } from "@rocicorp/zero/react";
 import { escapeLike } from "@rocicorp/zero";
 import { Schema } from "./schema";
 import { randomMessage } from "./test-data";
 import { randInt } from "./rand";
 import { useInterval } from "./use-interval";
 import { formatDate } from "./date";
+import { useZeroQueryAtom } from "./use-zero-jotai";
 
 function App() {
   const z = useZero<Schema>();
-  const [users] = useQuery(z.query.user, {
-    ttl: "forever",
+  const [users] = useZeroQueryAtom(z.query.user, {
+    key: "users",
   });
 
-  const [mediums] = useQuery(z.query.medium, {
-    ttl: "forever",
+  const [mediums] = useZeroQueryAtom(z.query.medium, {
+    key: "mediums",
   });
 
   const [filterUser, setFilterUser] = useState<string>("");
   const [filterText, setFilterText] = useState<string>("");
 
   const all = z.query.message;
-  const [allMessages] = useQuery(all, {
-    ttl: "forever",
+  const [allMessages] = useZeroQueryAtom(all, {
+    key: "allMessages",
   });
 
   let filtered = all
@@ -39,7 +40,9 @@ function App() {
     filtered = filtered.where("body", "LIKE", `%${escapeLike(filterText)}%`);
   }
 
-  const [filteredMessages] = useQuery(filtered);
+  const [filteredMessages] = useZeroQueryAtom(filtered, {
+    key: "filteredMessages",
+  });
 
   const hasFilters = filterUser || filterText;
   const [action, setAction] = useState<"add" | "remove" | undefined>(undefined);
