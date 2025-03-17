@@ -372,24 +372,26 @@ export const zeroQueryAtom = memoize(
     store: ReturnType<typeof getDefaultStore>;
     syncOnData?: boolean;
   }) => {
+    // Create a temporary placeholder for materializedFactoryView
+    let materializedFactoryView: ChangeListenerFactory<TReturn> | null = null;
+    
+    // Create stateAtom first - use a primitive atom instead of a derived atom with a setter
+    const baseAtom = atom<[TReturn[], QueryResultDetails]>([[], { type: "unknown" }]);
+    baseAtom.debugLabel = `${subscriptions.key} Base Atom`;
+    
+    // Create a derived atom that reads from the base atom
     const stateAtom = atom(
-      (): [TReturn[], QueryResultDetails] => {
-        if (!materializedFactoryView) {
-          return [[], { type: "unknown" }];
-        }
-
-        return [
-          // Use structuredClone so react re-renders and to avoid reference issues.
-          structuredClone(materializedFactoryView.data ?? []),
-          { type: materializedFactoryView.status },
-        ];
-      },
-      (_, set, value: [TReturn[], QueryResultDetails]) => {
-        set(stateAtom, value);
+      (get) => get(baseAtom),
+      (_get, set, value: [TReturn[], QueryResultDetails]) => {
+        // Set the base atom instead of self-referencing
+        set(baseAtom, value);
       }
     );
-
-    const materializedFactoryView = getMaterializedFactoryView<TTable, TReturn>(
+    
+    stateAtom.debugLabel = `${subscriptions.key} State Atom`;
+    
+    // Now initialize materializedFactoryView with a reference to the already created stateAtom
+    materializedFactoryView = getMaterializedFactoryView<TTable, TReturn>(
       {
         query,
         subscriptions: {
@@ -400,12 +402,19 @@ export const zeroQueryAtom = memoize(
             }
 
             // Use structuredClone so react re-renders and to avoid reference issues.
-            store.set(stateAtom, [structuredClone(result[0] ?? []), result[1]]);
+            store.set(baseAtom, [structuredClone(result[0] ?? []), result[1]]);
           },
         },
       },
     );
-    stateAtom.debugLabel = `${subscriptions.key} State Atom`;
+    
+    // Update the base atom with initial data
+    if (materializedFactoryView) {
+      store.set(baseAtom, [
+        structuredClone(materializedFactoryView.data ?? []),
+        { type: materializedFactoryView.status }
+      ]);
+    }
 
     return {
       stateAtom,
